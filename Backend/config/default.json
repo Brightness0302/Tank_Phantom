@@ -1,0 +1,4 @@
+{
+  "mongoURI": "mongodb+srv://root:Strong1!@cluster0.nmf41fk.mongodb.net/tank?retryWrites=true&w=majority",
+  "jwtSecret": "secret"
+}
