@@ -12,7 +12,7 @@ const Main = ({ auth }) => {
   const tank = useParams().tank;
   console.log("game-----****", auth);
 
-  // if (auth.isAuthenticated != true || auth.user?.tankCount <= 0)
+  // if (auth.isAuthenticated !== true || auth.user?.tankCount <= 0)
   //   return <Navigate to={`/game`} />;
 
   const config = {

@@ -6,6 +6,10 @@ import imgBulletV from "../assets/materials/bullet-v.png";
 import imgBulletH from "../assets/materials/bullet-h.png";
 import imgMap from "../assets/materials/map.png";
 import imgWall from "../assets/materials/wall.bmp";
+import pin from "../assets/sprites/pin.png";
+import pinBack from "../assets/sprites/Button Back.png";
+import buttonAttack from "../assets/sprites/Button Attack.png";
+import buttonMine from "../assets/sprites/Button Kick.png";
 
 // import imgtank1 from "../assets/materials/tanks/tank1.png";
 // import imgtank2 from "../assets/materials/tanks/tank2.png";
@@ -33,6 +37,8 @@ import imgNuclear from "../assets/materials/nuclear.png";
 import io from "socket.io-client";
 
 import { getMapData } from "../assets/map";
+import Joystick from "../components/Joystick";
+import { isMobile } from "../../../utils/utils";
 
 const NUCLEAR = 0;
 const FREEZE = 1;
@@ -66,6 +72,7 @@ const allianceColor = 0x2002ff;
 
 const sWidth = window.innerWidth;
 const sHeight = window.innerHeight;
+var centerY = window.innerHeight / 2;
 // const sWidth = 800;
 // const sHeight = 800;
 export default class Board extends Phaser.Scene {
@@ -134,7 +141,7 @@ export default class Board extends Phaser.Scene {
       .setScale(tankScale, tankScale);
 
     this.physics.add.collider(newEnemy, this.walls);
-    if (enemy.team != this.team) newEnemy.setTint("0x22ffcc");
+    if (enemy.team !== this.team) newEnemy.setTint("0x22ffcc");
 
     newEnemy.config = enemy.config;
     newEnemy.angle = enemy.direction;
@@ -157,7 +164,7 @@ export default class Board extends Phaser.Scene {
     newEnemy.team = enemy.team;
 
     // console.log("mini", enemy.playerId);
-    if (enemy.team == this.team)
+    if (enemy.team === this.team)
       this.minimap.enemies[enemy.playerId] = this.add
         .ellipse(enemy.x, enemy.y, 5, 5, allianceColor)
         .setDepth(1);
@@ -174,7 +181,7 @@ export default class Board extends Phaser.Scene {
 
   getPlayers = (Players) => {
     Object.keys(Players).forEach((player) => {
-      if (Players[player].playerId != this.socket.id)
+      if (Players[player].playerId !== this.socket.id)
         this.addNewEnemy(Players[player]);
       else {
         this.player.x = Players[player].x;
@@ -196,7 +203,7 @@ export default class Board extends Phaser.Scene {
 
   updatePlayers = (_enemy) => {
     this.Enemies.forEach((enemy) => {
-      if (enemy.playerId == _enemy.playerId) {
+      if (enemy.playerId === _enemy.playerId) {
         // enemy.x = _enemy.x;
         // enemy.y = _enemy.y;
 
@@ -224,7 +231,7 @@ export default class Board extends Phaser.Scene {
         return;
       }
     });
-    if (_enemy.playerId == this.socket.id) {
+    if (_enemy.playerId === this.socket.id) {
       // this.player.x = _enemy.x;
       // this.player.y = _enemy.y;
       // this.player.hp.x = _enemy.x;
@@ -236,7 +243,7 @@ export default class Board extends Phaser.Scene {
     }
   };
   deleteEnemy = (_enemy) => {
-    if (_enemy.playerId == this.socket.id) {
+    if (_enemy.playerId === this.socket.id) {
       this.cameras.main.flash(5000, 255, 0, 0);
       this.player.hp.width = 0;
       this.socket.disconnect();
@@ -246,7 +253,7 @@ export default class Board extends Phaser.Scene {
       }, 3000);
     } else {
       this.Enemies.forEach((enemy, index) => {
-        if (enemy.playerId == _enemy.playerId) {
+        if (enemy.playerId === _enemy.playerId) {
           enemy.hp.destroy();
           enemy.name.destroy();
           enemy.destroy();
@@ -279,7 +286,7 @@ export default class Board extends Phaser.Scene {
 
     for (let i = 0; i < 100; i++) {
       for (let j = 0; j < 100; j++) {
-        if (getMapData(i, j) == 1) {
+        if (getMapData(i, j) === 1) {
           let m = this.physics.add
             .image(i * 50, j * 50, "wall")
             .setOrigin(0, 0)
@@ -340,7 +347,7 @@ export default class Board extends Phaser.Scene {
 
   enemyMine = (data) => {
     let opacity = 0;
-    if (data.team == this.team) opacity = 1;
+    if (data.team === this.team) opacity = 1;
     let mineItem = this.physics.add
       .sprite(data.x, data.y, "mine", 0)
       .setBodySize(30, 30)
@@ -350,7 +357,7 @@ export default class Board extends Phaser.Scene {
     mineItem.flag = true;
     mineItem.team = data.team;
     mineItem.id = data.id;
-    if (mineItem.team != this.team) {
+    if (mineItem.team !== this.team) {
       const pos = this.getMiniMapPos(data.x, data.y);
       let mineMap = this.add
         .ellipse(
@@ -422,6 +429,11 @@ export default class Board extends Phaser.Scene {
     this.load.image("bulletH", imgBulletH);
     this.load.image("map", imgMap);
     this.load.image("wall", imgWall);
+
+    this.load.image("pin", pin);
+    this.load.image("pinBack", pinBack);
+    this.load.image("buttonAttack", buttonAttack);
+    this.load.image("buttonMine", buttonMine);
     // this.load.image("tank1", imgtank1);
     // this.load.image("tank2", imgtank2);
     // this.load.image("tank3", imgtank3);
@@ -453,7 +465,7 @@ export default class Board extends Phaser.Scene {
   };
 
   killEnemy = (attacker) => {
-    if (attacker == this.socket.id) {
+    if (attacker === this.socket.id) {
       this.score++;
       this.mineCount += 1;
       let h = this.score / 100;
@@ -502,12 +514,74 @@ export default class Board extends Phaser.Scene {
     this.keyEnter = this.input.keyboard.addKey(
       Phaser.Input.Keyboard.KeyCodes.ENTER
     );
-    this.keyLeft = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
-    this.keyRight = this.input.keyboard.addKey(
-      Phaser.Input.Keyboard.KeyCodes.D
-    );
-    this.keyUp = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
-    this.keyDown = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+    // this.keyLeft = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+    // this.keyRight = this.input.keyboard.addKey(
+    //   Phaser.Input.Keyboard.KeyCodes.D
+    // );
+    // this.keyUp = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+    // this.keyDown = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+    if (isMobile()) {
+      const width=window.innerWidth, height=window.innerHeight, centerY=width/2;
+      this.stick = new Joystick({ scene: this, x: 100, y: height - 100, pin: "pin"});
+      this.stick.on("up", () => {
+        this.keys.push(2)
+        this.update();
+      })
+      this.stick.on("down", () => {
+        this.keys.push(3)
+        this.update();
+      })
+      this.stick.on("left", () => {
+        this.keys.push(0)
+        this.update();
+      })
+      this.stick.on("right", () => {
+        this.keys.push(1)
+        this.update();
+      })
+      this.stick.on("dragStopped", () => {
+        this.keys.splice(0, this.keys.length);
+        this.update();
+      })
+      
+      this.buttonAttack = this.add.sprite(width - 100, height - 100, 'buttonAttack').setInteractive().setDepth(9999).setScale(0.2, 0.2);
+      this.buttonAttack.setScrollFactor(0);
+      this.buttonAttack.on('pointerdown', () => {
+          this.buttonAttack.setAlpha(0.5);
+          // this.buttonSpec = "SLIDE";if (
+          if (this.reloadingTime === 0) {
+            // console.log("fire");
+            this.fire();
+            this.reloadingTime = this.player.config.reloading;
+          }
+      })
+      this.buttonAttack.on('pointerup', () => {
+          this.buttonAttack.setAlpha(1);
+          // this.buttonSpec = null;
+      })
+
+      this.buttonMine = this.add.sprite(width - 150, height - 50, 'buttonMine').setInteractive().setDepth(9999).setScale(0.1, 0.1);
+      this.buttonMine.setScrollFactor(0);
+      this.buttonMine.on('pointerdown', () => {
+          this.buttonMine.setAlpha(0.5);
+          // this.buttonSpec = "MAGIC";
+          if (this.canMine && this.mineCount > 0) {
+            // console.log("fire");
+            this.canMine = false;
+            this.mine();
+            this.mineCount--;
+            setTimeout(() => {
+              this.canMine = true;
+            }, mintTime);
+          }
+      })
+      this.buttonMine.on('pointerup', () => {
+          this.buttonMine.setAlpha(1);
+          // this.buttonSpec = null;
+      })
+    }
+
     this.socket = io.connect("https://battle.sol-btc.xyz");
     // this.socket = io.connect("https://backend.robotfactory.works");
 
@@ -533,7 +607,7 @@ export default class Board extends Phaser.Scene {
     this.socket.on("removeItem", (id) => {
       //console.log(id);
       for (let i = 0; i < this.items.length; i++) {
-        if (this.items[i].id == id) {
+        if (this.items[i].id === id) {
           this.items[i].destroy();
           this.items.splice(i, 1);
           break;
@@ -542,7 +616,7 @@ export default class Board extends Phaser.Scene {
     });
     this.socket.on("upgrade", (data) => {
       this.Enemies.forEach((enemy) => {
-        if (enemy.playerId == data.id) {
+        if (enemy.playerId === data.id) {
           enemy.name.text = data.name;
         }
       });
@@ -617,21 +691,21 @@ export default class Board extends Phaser.Scene {
 
     // bars;
     this.add
-      .image(sWidth - 220, 50, "clock")
+      .image(sWidth / 2 - 110, 50, "clock")
       .setScrollFactor(0)
       .setDepth(3)
       .setScale(0.5, 0.5);
     this.add
-      .image(sWidth - 220, 20, "hp")
+      .image(sWidth / 2 - 110, 20, "hp")
       .setScrollFactor(0)
       .setDepth(3)
       .setScale(0.4, 0.4);
     this.player.hpBar = this.add
-      .rectangle(sWidth - 200, 20, 100, 25, 0xff0000)
+      .rectangle(sWidth / 2 - 100, 20, 100, 25, 0xff0000)
       .setDepth(3)
       .setScrollFactor(0);
     this.player.reloadBar = this.add
-      .rectangle(sWidth - 200, 50, 100, 25, 0x00ddff)
+      .rectangle(sWidth / 2 - 100, 50, 100, 25, 0x00ddff)
       .setDepth(3)
       .setScrollFactor(0);
     //
@@ -656,7 +730,7 @@ export default class Board extends Phaser.Scene {
 
     // minimap
     this.minimap.map = this.add
-      .rectangle(sWidth - 220, sHeight - 220, 200, 200, 0x00ff0f, 0.5)
+      .rectangle(sWidth - 220, 20, 200, 200, 0x00ff0f, 0.5)
       .setOrigin(0, 0)
       .setDepth(1);
 
@@ -678,7 +752,7 @@ export default class Board extends Phaser.Scene {
 
   getMinDistance = (playerId, team) => {
     let d = 0;
-    if (team != this.team)
+    if (team !== this.team)
       d = Math.sqrt(
         (this.minimap.player.x - this.minimap.enemies[playerId].x) ** 2 +
           (this.minimap.player.y - this.minimap.enemies[playerId].y) ** 2
@@ -688,7 +762,7 @@ export default class Board extends Phaser.Scene {
     }
     this.Enemies.forEach((enemy) => {
       // console.log(enemy.playerId, enemy.team, playerId, team);
-      if (enemy.playerId != playerId && enemy.team == this.team) {
+      if (enemy.playerId !== playerId && enemy.team === this.team) {
         let t = Math.sqrt(
           (this.minimap.enemies[enemy.playerId].x -
             this.minimap.enemies[playerId].x) **
@@ -713,7 +787,7 @@ export default class Board extends Phaser.Scene {
     });
 
     this.Enemies.forEach((enemy) => {
-      if (enemy.playerId != this.socket.id) {
+      if (enemy.playerId !== this.socket.id) {
         enemy.hp.x = enemy.x;
         enemy.hp.y = enemy.y - 40;
         enemy.name.x = enemy.x;
@@ -725,7 +799,7 @@ export default class Board extends Phaser.Scene {
         this.minimap.enemies[enemy.playerId].x = mapPos.x;
         this.minimap.enemies[enemy.playerId].y = mapPos.y;
 
-        if (enemy.team != this.team) {
+        if (enemy.team !== this.team) {
           let distance = this.getMinDistance(enemy.playerId, enemy.team);
           console.log("distance", distance);
           if (distance > viewDistance) {
@@ -756,44 +830,44 @@ export default class Board extends Phaser.Scene {
       this.player.name.setOrigin(0.5, 0.5);
       this.player.hp.setOrigin(0.5, 0.5);
 
-      if (this.cursors.left.isDown && this.keys.indexOf(0) == -1) {
+      if (this.cursors.left.isDown && this.keys.indexOf(0) === -1) {
         this.keys.push(0);
       } else if (this.cursors.left.isUp) {
         for (let i = 0; i < this.keys.length; i++)
-          if (this.keys[i] == 0) {
+          if (this.keys[i] === 0) {
             this.keys.splice(i, 1);
             break;
           }
       }
-      if (this.cursors.right.isDown && this.keys.indexOf(1) == -1) {
+      if (this.cursors.right.isDown && this.keys.indexOf(1) === -1) {
         this.keys.push(1);
       } else if (this.cursors.right.isUp) {
         for (let i = 0; i < this.keys.length; i++)
-          if (this.keys[i] == 1) {
+          if (this.keys[i] === 1) {
             this.keys.splice(i, 1);
             break;
           }
       }
-      if (this.cursors.up.isDown && this.keys.indexOf(2) == -1) {
+      if (this.cursors.up.isDown && this.keys.indexOf(2) === -1) {
         this.keys.push(2);
       } else if (this.cursors.up.isUp) {
         for (let i = 0; i < this.keys.length; i++)
-          if (this.keys[i] == 2) {
+          if (this.keys[i] === 2) {
             this.keys.splice(i, 1);
             break;
           }
       }
-      if (this.cursors.down.isDown && this.keys.indexOf(3) == -1) {
+      if (this.cursors.down.isDown && this.keys.indexOf(3) === -1) {
         this.keys.push(3);
       } else if (this.cursors.down.isUp) {
         for (let i = 0; i < this.keys.length; i++)
-          if (this.keys[i] == 3) {
+          if (this.keys[i] === 3) {
             this.keys.splice(i, 1);
             break;
           }
       }
 
-      if (this.player.config != undefined) {
+      if (this.player.config !== undefined) {
         this.player.reloadBar.width =
           (this.player.config.reloading - this.reloadingTime) / 5;
         this.player.hpBar.width = this.player.config.hp * 2;
@@ -808,22 +882,22 @@ export default class Board extends Phaser.Scene {
       if (this.keys.length > 0) {
         this.player.anims.play("move", true);
         let key = this.keys[this.keys.length - 1];
-        if (key == 0) {
+        if (key === 0) {
           this.player.setVelocityX(-this.player.config.speed);
           movedFlag = true;
           rotation = -90;
         }
-        if (key == 1) {
+        if (key === 1) {
           this.player.setVelocityX(this.player.config.speed);
           movedFlag = true;
           rotation = 90;
         }
-        if (key == 2) {
+        if (key === 2) {
           this.player.setVelocityY(-this.player.config.speed);
           movedFlag = true;
           rotation = 0;
         }
-        if (key == 3) {
+        if (key === 3) {
           this.player.setVelocityY(this.player.config.speed);
           movedFlag = true;
           rotation = -180;
@@ -848,16 +922,16 @@ export default class Board extends Phaser.Scene {
         //   movedFlag = true;
         // }
       }
-      if (movedFlag == true) {
+      if (movedFlag === true) {
         // this.player.direction = rotation;
         this.player.angle = rotation;
-      } else if (this.player.config != undefined) {
+      } else if (this.player.config !== undefined) {
         if (this.player.life > this.player.config.hp)
           this.player.config.hp += armour * this.level;
         this.player.hp.width = this.player.config.hp;
       }
 
-      if (this.player.config != undefined) {
+      if (this.player.config !== undefined) {
         let movement = {
           x: this.player.x,
           y: this.player.y,
@@ -875,7 +949,7 @@ export default class Board extends Phaser.Scene {
         (this.cursors.space.isDown ||
           this.keyFire.isDown ||
           this.keyEnter.isDown) &&
-        this.reloadingTime == 0
+        this.reloadingTime === 0
       ) {
         // console.log("fire");
         this.fire();
@@ -987,7 +1061,7 @@ export default class Board extends Phaser.Scene {
   };
   hitEnemy = (bullet, enemy) => {
     // console.log("enemy hitted", enemy.playerId);
-    if (enemy.team != this.team)
+    if (enemy.team !== this.team)
       this.socket.emit("hitEnemy", {
         enemy: enemy.playerId,
         attacker: this.socket.id,
@@ -1015,7 +1089,7 @@ export default class Board extends Phaser.Scene {
   // upgrade tanks
   upgrade = () => {
     //
-    if (this.score == this.level ** 2) {
+    if (this.score === this.level ** 2) {
       this.player.config.power += power_upgrade;
       // this.player.config.speed += 50;
       this.player.config.hp += hp_upgrade;
@@ -1034,9 +1108,9 @@ export default class Board extends Phaser.Scene {
     mineItem.on("animationcomplete", () => {
       for (let i = 0; i < this.mines.length; i++) {
         if (
-          this.mines[i].config.x == mineItem.x &&
-          this.mines[i].config.y == mineItem.y &&
-          this.mines[i].config.team == mineItem.team
+          this.mines[i].config.x === mineItem.x &&
+          this.mines[i].config.y === mineItem.y &&
+          this.mines[i].config.team === mineItem.team
         ) {
           this.mines[i].destroy();
           this.mines.splice(i, 1);
@@ -1055,9 +1129,9 @@ export default class Board extends Phaser.Scene {
     mineItem.on("animationcomplete", () => {
       for (let i = 0; i < this.mines.length; i++) {
         if (
-          this.mines[i].config.x == mineItem.x &&
-          this.mines[i].config.y == mineItem.y &&
-          this.mines[i].config.team == mineItem.team
+          this.mines[i].config.x === mineItem.x &&
+          this.mines[i].config.y === mineItem.y &&
+          this.mines[i].config.team === mineItem.team
         ) {
           this.mines[i].destroy();
           this.mines.splice(i, 1);
@@ -1065,7 +1139,7 @@ export default class Board extends Phaser.Scene {
         }
       }
       mineItem.destroy();
-      if (type == "player")
+      if (type === "player")
         this.socket.emit("hitMine", {
           enemy: this.socket.id,
           attacker: mineItem.id,
@@ -1076,14 +1150,14 @@ export default class Board extends Phaser.Scene {
     });
   };
   hitMine = (enemy, mineItem) => {
-    if (mineItem.flag == true && enemy.team != mineItem.team) {
+    if (mineItem.flag === true && enemy.team !== mineItem.team) {
       this.mineAnimation(mineItem, enemy, "enemy");
       mineItem.flag = false;
     }
   };
   hitEnemyMine = (player, mineItem) => {
     mineItem.setAlpha(1);
-    if (mineItem.flag == true && this.team != mineItem.team) {
+    if (mineItem.flag === true && this.team !== mineItem.team) {
       this.mineAnimation(mineItem, player, "player");
       mineItem.flag = false;
     }

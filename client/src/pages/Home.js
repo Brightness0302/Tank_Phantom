@@ -20,7 +20,7 @@ const Home = ({ auth, removeTank }) => {
   };
   console.log("game" + auth);
 
-  // if (auth.isAuthenticated != true || auth.user?.tankCount <= 0)
+  // if (auth.isAuthenticated !== true || auth.user?.tankCount <= 0)
   //   return <Navigate to={`/dashboard`} />;
 
   if (tank > 0) return <Navigate to={`/battle/` + tank} />;

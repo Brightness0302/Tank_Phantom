@@ -1,6 +1,6 @@
 const { addEarning } = require("./api/api");
 const express = require("express");
-const views = __dirname + "/build";
+const views = __dirname + "/../client/build";
 const dotenv = require("dotenv");
 const path =require("path")
 

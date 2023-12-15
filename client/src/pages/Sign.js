@@ -27,7 +27,7 @@ const Sign = ({ loadUser, logIn, signUp, auth, alerts }) => {
     });
   }, [alerts]);
   const signIn = async () => {
-    if (walletAddress == null) {
+    if (walletAddress === null) {
       const address = await connectWallet();
       logIn(address);
     } else {
@@ -35,7 +35,7 @@ const Sign = ({ loadUser, logIn, signUp, auth, alerts }) => {
     }
   };
   const createAccount = async () => {
-    if (username == null || username == "")
+    if (username === null || username === "")
       toast.error("Input your username", {
         position: "top-right",
         autoClose: 2000,
@@ -46,7 +46,7 @@ const Sign = ({ loadUser, logIn, signUp, auth, alerts }) => {
         progress: undefined,
         theme: "colored",
       });
-    else if (team == null || team == "")
+    else if (team === null || team === "")
       toast.error("Input your team name", {
         position: "top-right",
         autoClose: 2000,
@@ -57,7 +57,7 @@ const Sign = ({ loadUser, logIn, signUp, auth, alerts }) => {
         progress: undefined,
         theme: "colored",
       });
-    else if (walletAddress == null) {
+    else if (walletAddress === null) {
       toast.error("Connect your wallet", {
         position: "top-right",
         autoClose: 2000,
@@ -73,7 +73,7 @@ const Sign = ({ loadUser, logIn, signUp, auth, alerts }) => {
     }
   };
 
-  if (auth.isAuthenticated == true) return <Navigate to="/dashboard" />;
+  if (auth.isAuthenticated === true) return <Navigate to="/dashboard" />;
   return (
     <>
       <div className="container mx-auto px-10 py-10 mt-10 rounded-lg bg-gray-800 w-11/12 sm:w-[600px]">

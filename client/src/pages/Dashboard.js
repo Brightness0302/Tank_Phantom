@@ -17,7 +17,7 @@ const Dashboard = ({ auth, addTank, withDraw, alerts }) => {
 
   useEffect(() => {
     alerts.forEach((element) => {
-      if (element.alertType == "danger")
+      if (element.alertType === "danger")
         toast.error(element.msg, {
           position: "top-right",
           autoClose: 2000,
@@ -44,7 +44,7 @@ const Dashboard = ({ auth, addTank, withDraw, alerts }) => {
   }, [alerts]);
   useEffect(() => {
     console.log(auth.user, "---");
-    if (auth.user != null) {
+    if (auth.user !== null) {
       setName(auth.user.name);
       setTeam(auth.user.team);
       setEarning(auth.user.earn);
@@ -61,7 +61,7 @@ const Dashboard = ({ auth, addTank, withDraw, alerts }) => {
   const withDrawAll = async () => {
     await withDraw();
   };
-  if (auth.isAuthenticated == false) return <Navigate to="/signup" />;
+  if (auth.isAuthenticated === false) return <Navigate to="/signup" />;
   return (
     <>
       <div className="container mx-auto py-10 px-2">
