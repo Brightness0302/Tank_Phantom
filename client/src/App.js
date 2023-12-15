@@ -38,11 +38,11 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
-            {/* <Route index element={<Home />} /> */}
+            <Route index element={<Sign />} />
             <Route path="game" element={<Home />} />
 
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="signup" element={<Sign />} />
+            <Route index path="signup" element={<Sign />} />
           </Route>
           <Route path="/battle/:tank" element={<Main />} />
         </Routes>

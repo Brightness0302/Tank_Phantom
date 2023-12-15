@@ -18,16 +18,16 @@ const Layout = ({ auth, alert, logout }) => {
     <>
       <nav className="border-gray-200 px-2 sm:px-4  rounded dark:bg-gray-900 bg-gray-900 text-white">
         <div className="container flex flex-wrap justify-between items-center mx-auto">
-          <a href="https://flowbite.com/" className="flex items-center">
+          <div className="flex items-center">
             <img
-              src="https://flowbite.com/docs/images/logo.svg"
+              src="/img/tank/tank-logo.png"
               className="mr-3 h-6 sm:h-9"
               alt="Flowbite Logo"
             />
             <span className="self-center text-xl font-semibold whitespace-nowrap text-white dark:text-white">
-              Flowbite
+              Tank Battle
             </span>
-          </a>
+          </div>
           <button
             // data-collapse-toggle="navbar-default"
             type="button"

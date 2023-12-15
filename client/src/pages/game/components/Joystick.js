@@ -10,11 +10,12 @@ export default class Joystick extends Phaser.GameObjects.Sprite {
 
 
         this.prevX = 0;
+        this.prevY = 0;
         /* Pin indicator - what players think they drag */
         this.centerX = x;
         this.centerY = y;
         scene.physics.add.sprite(x, y, "pinBack", 0).setOrigin(0.5, 0.5).setDepth(9999).setScale(0.1, 0.1).setScrollFactor(0);
-        this.pin = scene.physics.add.sprite(x, y, pin, 0).setOrigin(0.5, 0.5).setDepth(9999).setScale(0.2, 0.2);
+        this.pin = scene.physics.add.sprite(x, y, pin, 0).setOrigin(0.5, 0.5).setDepth(9999).setScale(0.4, 0.4);
         this.pin.setScrollFactor(0);
         this.pin.setInteractive(new Phaser.Geom.Circle(this.pin.width / 2, this.pin.height / 2, this.pin.width / 2 - 10), Phaser.Geom.Circle.Contains);
 
@@ -24,6 +25,7 @@ export default class Joystick extends Phaser.GameObjects.Sprite {
             // this.pin.setTint(0x44ff44);
             this.pin.setScale(0.15, 0.15);
             this.prevX = this.scene.cameras.main.midPoint.x;
+            this.prevY = this.scene.cameras.main.midPoint.y;
         });
 
 
@@ -52,34 +54,25 @@ export default class Joystick extends Phaser.GameObjects.Sprite {
             // console.log(this.scene.cameras.main);
 
 
-            let d = this.scene.cameras.main.midPoint.x - this.prevX;
+            let x1 = this.scene.cameras.main.midPoint.x - this.prevX;
+            let y1 = this.scene.cameras.main.midPoint.y - this.prevY;
 
 
             // d = 0;
-            let dx = dragX - this.centerX - d;
-            let dy = dragY - this.centerY;
+            let dx = dragX - this.centerX - x1;
+            let dy = dragY - this.centerY - y1;
 
 
             // console.log(d, this.scene.cameras.main);
 
 
 
-            let l = Math.sqrt((dx ** 2 + dy ** 2) / 1000);
+            let l = Math.sqrt((dx ** 2 + dy ** 2) / 4000);
             if (l !== 0 && l >= 1) {
                 dx = dx / l;
                 dy = dy / l;
             }
-            console.log(dx, dy, Math.atan2(-dy, dx))
-            const angle = Math.atan2(-dy, dx);
-            if (angle>-Math.PI/4 && angle <=Math.PI/4) {
-                this.emit('right')
-            } else if (angle>-Math.PI/4*3 && angle <= -Math.PI/4) {
-                this.emit('down')
-            } else if (angle>Math.PI/4 && angle <= Math.PI/4*3) {
-                this.emit('left')
-            } else {
-                this.emit('up')
-            }
+
             this.emit('mousemove', dx, dy);
             gameObject.x = this.centerX + dx;
             gameObject.y = this.centerY + dy;

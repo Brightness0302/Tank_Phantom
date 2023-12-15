@@ -3,6 +3,8 @@ import { useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import Board from "./scenes/Board";
 import { connect } from "react-redux";
+import BoardMobile from "./scenes/BoardMobile";
+import { isMobile } from "../../utils/utils";
 // import Temp from "./scenes/Temp";
 const boardConfig = require("./config.json");
 
@@ -14,6 +16,13 @@ const Main = ({ auth }) => {
 
   // if (auth.isAuthenticated !== true || auth.user?.tankCount <= 0)
   //   return <Navigate to={`/game`} />;
+  
+  let battle;
+  if (isMobile())
+    battle = new BoardMobile(tank, name, team, 0);
+  else {
+    battle = new Board(tank, name, team, 0);
+  }
 
   const config = {
     type: Phaser.AUTO,
@@ -28,7 +37,7 @@ const Main = ({ auth }) => {
     },
     background: "black",
     // scene: [new Board(tank, auth.user.name, auth.user.team, auth.user._id)],
-    scene: [new Board(tank, name, team, 0)],
+    scene: [battle],
     scale: {
       mode: Phaser.Scale.FIT,
       parent: "game",

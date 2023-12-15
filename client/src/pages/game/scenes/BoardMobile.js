@@ -37,6 +37,7 @@ import imgNuclear from "../assets/materials/nuclear.png";
 import io from "socket.io-client";
 
 import { getMapData } from "../assets/map";
+import Joystick from "../components/Joystick";
 import { isMobile } from "../../../utils/utils";
 
 const NUCLEAR = 0;
@@ -74,7 +75,7 @@ const sHeight = window.innerHeight;
 var centerY = window.innerHeight / 2;
 // const sWidth = 800;
 // const sHeight = 800;
-export default class Board extends Phaser.Scene {
+export default class BoardMobile extends Phaser.Scene {
   constructor(tankType, name, team, userId) {
     super({
       key: "Board",
@@ -128,6 +129,7 @@ export default class Board extends Phaser.Scene {
 
     //
     this.items = [];
+    this.joystickKey = -1;
   }
   setTankAlpha = (tank, alpha) => {
     tank.setAlpha(alpha);
@@ -152,13 +154,14 @@ export default class Board extends Phaser.Scene {
 
     // ## todo _health
     newEnemy.hp = this.add
-      .rectangle(enemy.x, enemy.y - 40, enemy.config.hp, 10, 0xff0000)
+      .rectangle(enemy.x + 40, enemy.y, 6, enemy.config.hp, 0xff0000)
       .setDepth(1);
 
     newEnemy.name = this.add
-      .text(enemy.x, enemy.y - 60, `${enemy.team}:${enemy.name}`)
+      .text(enemy.x + 60, enemy.y, `${enemy.team}:${enemy.name}`)
       .setDepth(1)
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0.5, 0.5)
+      .setAngle(90);
 
     newEnemy.team = enemy.team;
 
@@ -177,7 +180,6 @@ export default class Board extends Phaser.Scene {
     this.minimap.enemies[enemy.playerId].setScrollFactor(0);
     this.Enemies.push(newEnemy);
   };
-
   getPlayers = (Players) => {
     Object.keys(Players).forEach((player) => {
       if (Players[player].playerId !== this.socket.id)
@@ -186,20 +188,18 @@ export default class Board extends Phaser.Scene {
         this.player.x = Players[player].x;
         this.player.y = Players[player].y;
         this.player.config = Players[player].config;
-        this.player.hp.x = this.player.x;
-        this.player.hp.y = this.player.y - 60;
-        this.player.hp.width = this.player.config.hp;
+        this.player.hp.x = this.player.x + 60;
+        this.player.hp.y = this.player.y;
+        this.player.hp.height = this.player.config.hp;
         this.player.life = this.player.config.hp;
         this.player.angle = Players[player].direction;
         this.reloadingTime = this.player.config.reloading;
       }
     });
   };
-
   getNewPlayer = (enemy) => {
     this.addNewEnemy(enemy);
   };
-
   updatePlayers = (_enemy) => {
     this.Enemies.forEach((enemy) => {
       if (enemy.playerId === _enemy.playerId) {
@@ -238,13 +238,13 @@ export default class Board extends Phaser.Scene {
       // this.player.direction = _enemy.direction;
       // this.player.setFrame(_enemy.direction / 90);
       this.player.config = _enemy.config;
-      this.player.hp.width = _enemy.config.hp;
+      this.player.hp.height = _enemy.config.hp;
     }
   };
   deleteEnemy = (_enemy) => {
     if (_enemy.playerId === this.socket.id) {
       this.cameras.main.flash(5000, 255, 0, 0);
-      this.player.hp.width = 0;
+      this.player.hp.height = 0;
       this.socket.disconnect();
 
       setTimeout(() => {
@@ -264,7 +264,6 @@ export default class Board extends Phaser.Scene {
       });
     }
   };
-
   mapLoad = (mapData) => {
     // console.log("mapLoaded");
     this.walls = [];
@@ -298,7 +297,6 @@ export default class Board extends Phaser.Scene {
     }
     this.physics.add.collider(this.walls, this.player);
   };
-
   enemyBulletFired = (bulletData) => {
     let bullet = this.physics.add
       .image(bulletData.x, bulletData.y, "bulletV")
@@ -343,7 +341,6 @@ export default class Board extends Phaser.Scene {
     // this.physics.add.collider(bullet, this.bullets, this.hitBullet, null);
     // this.physics.add.collider(bullet, this.EnemyBullets, this.hitBullet, null);
   };
-
   enemyMine = (data) => {
     let opacity = 0;
     if (data.team === this.team) opacity = 1;
@@ -396,7 +393,6 @@ export default class Board extends Phaser.Scene {
         break;
     }
   };
-
   getMiniMapPos = (x, y) => {
     let pos = {
       x: this.minimap.map.x + (x / 5000) * this.minimap.map.width,
@@ -404,7 +400,6 @@ export default class Board extends Phaser.Scene {
     };
     return pos;
   };
-
   tankCollider = (player, enemy) => {
     player.setVelocity(0);
   };
@@ -415,7 +410,6 @@ export default class Board extends Phaser.Scene {
     this.minimap.player.y =
       this.minimap.map.y + (this.player.y / 5000) * this.minimap.map.height;
   };
-
   preload() {
     // this.load.image("map", welcome);
     // this.load.spritesheet("player", imgPlayer, {
@@ -451,7 +445,6 @@ export default class Board extends Phaser.Scene {
 
     this.load.spritesheet("mine", imgMine, { frameWidth: 75, frameHeight: 75 });
   }
-
   gameConnect = () => {
     // console.log("gameConnected");
     this.socket.emit("mapLoad");
@@ -462,7 +455,6 @@ export default class Board extends Phaser.Scene {
       userId: this.userId,
     });
   };
-
   killEnemy = (attacker) => {
     if (attacker === this.socket.id) {
       this.score++;
@@ -476,7 +468,6 @@ export default class Board extends Phaser.Scene {
       this.upgrade();
     }
   };
-
   updateLog = (log) => {
     // console.log("Logs:", log);
     for (let i = 0; i < log.length; i++) {
@@ -519,6 +510,76 @@ export default class Board extends Phaser.Scene {
     // );
     // this.keyUp = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
     // this.keyDown = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+    if (isMobile()) {
+      let width=window.innerWidth, height=window.innerHeight;
+      this.stick = new Joystick({ scene: this, x: 100, y: 100, pin: "pin"});
+      this.stick.on("mousemove", (dx, dy) => {
+        let angle = Math.atan(dy / (dx + 0.0000001));
+        angle = angle * 180 / (Math.PI);
+
+        if (Math.abs(Math.abs(angle) - 90) <= 22.5) {
+
+            if (dy < 0)
+                this.joystickKey = 2;
+            else if (dy > 0) this.joystickKey = 3;
+        }
+        if (Math.abs(Math.abs(angle) - 0) <= 22.5) {
+
+            if (dx > 0)
+              this.joystickKey = 1;
+            else if (dx < 0) this.joystickKey = 0;
+        }
+        if (Math.abs(Math.abs(angle) - 45) <= 22.5) {
+            if (dx > 0)
+            this.joystickKey = 1;
+            else if (dx < 0) this.joystickKey = 0;
+            if (dy < 0)
+            this.joystickKey = 2;
+            else if (dy > 0) this.joystickKey = 3;
+
+        }
+      })
+      this.stick.on("dragStopped", () => {
+        this.joystickKey = -1;
+      })
+      
+      this.buttonAttack = this.add.sprite(100, height - 100, 'buttonAttack').setInteractive().setDepth(9999).setScale(0.2, 0.2);
+      this.buttonAttack.setScrollFactor(0);
+      this.buttonAttack.on('pointerdown', () => {
+          this.buttonAttack.setAlpha(0.5);
+          // this.buttonSpec = "SLIDE";if (
+          if (this.reloadingTime === 0) {
+            // console.log("fire");
+            this.fire();
+            this.reloadingTime = this.player.config.reloading;
+          }
+      })
+      this.buttonAttack.on('pointerup', () => {
+          this.buttonAttack.setAlpha(1);
+          // this.buttonSpec = null;
+      })
+
+      this.buttonMine = this.add.sprite(50, height - 150, 'buttonMine').setInteractive().setDepth(9999).setScale(0.1, 0.1);
+      this.buttonMine.setScrollFactor(0);
+      this.buttonMine.on('pointerdown', () => {
+          this.buttonMine.setAlpha(0.5);
+          // this.buttonSpec = "MAGIC";
+          if (this.canMine && this.mineCount > 0) {
+            // console.log("fire");
+            this.canMine = false;
+            this.mine();
+            this.mineCount--;
+            setTimeout(() => {
+              this.canMine = true;
+            }, mintTime);
+          }
+      })
+      this.buttonMine.on('pointerup', () => {
+          this.buttonMine.setAlpha(1);
+          // this.buttonSpec = null;
+      })
+    }
 
     this.socket = io.connect("https://battle.sol-btc.xyz");
     // this.socket = io.connect("https://backend.robotfactory.works");
@@ -591,19 +652,23 @@ export default class Board extends Phaser.Scene {
     // let layer = this.map.createLayer(0, tileset, 0, 0);
 
     //Score
-    let Score = this.add.image(80, 50, "score").setScrollFactor(0).setDepth(4);
+    let Score = this.add.image(sWidth - 50, 80, "score").setScrollFactor(0).setDepth(4);
+    Score.setAngle(90);
     this.hundred = this.add
-      .sprite(180, 50, "numbers")
+      .sprite(sWidth - 50, 180, "numbers")
       .setScrollFactor(0)
       .setDepth(4);
+    this.hundred.setAngle(90)
     this.ten = this.add
-      .sprite(230, 50, "numbers")
+      .sprite(sWidth - 50, 230, "numbers")
       .setScrollFactor(0)
       .setDepth(4);
+    this.ten.setAngle(90)
     this.one = this.add
-      .sprite(280, 50, "numbers")
+      .sprite(sWidth - 50, 280, "numbers")
       .setScrollFactor(0)
       .setDepth(4);
+    this.one.setAngle(90)
 
     this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -615,7 +680,7 @@ export default class Board extends Phaser.Scene {
 
     // this.player.setPipeline("Light2D");
     this.player.hp = this.add
-      .rectangle(-100, -100, 100, 6, 0x00ff00)
+      .rectangle(-100, -100, 6, 100, 0x00ff00)
       .setDepth(1);
     this.player.hp.setOrigin(0.5, 0.5);
     this.player.name = this.add.text(
@@ -624,26 +689,30 @@ export default class Board extends Phaser.Scene {
       `${this.team}:${this.name}`,
       "0xffff00"
     );
-    this.player.name.setOrigin(0.5, 0.5).setDepth(1);
+    this.player.name.setOrigin(0.5, 0.5).setDepth(1).setAngle(90);
     this.player.setCollideWorldBounds(true);
 
     // bars;
     this.add
-      .image(sWidth - 220, 20, "hp")
+      .image(sWidth - 20, sHeight / 2 - 50, "hp")
       .setScrollFactor(0)
       .setDepth(3)
-      .setScale(0.4, 0.4);
+      .setScale(0.4, 0.4)
+      .setOrigin(0.5,0.5)
+      .setAngle(90);
     this.add
-      .image(sWidth - 220, 50, "clock")
+      .image(sWidth - 70, sHeight / 2 - 50, "clock")
       .setScrollFactor(0)
       .setDepth(3)
-      .setScale(0.5, 0.5);
+      .setScale(0.5, 0.5)
+      .setOrigin(0.5,0.5)
+      .setAngle(90);
     this.player.hpBar = this.add
-      .rectangle(sWidth - 200, 20, 100, 25, 0xff0000)
+      .rectangle(sWidth - 20, sHeight / 2 - 20, 25, 100, 0xff0000)
       .setDepth(3)
       .setScrollFactor(0);
     this.player.reloadBar = this.add
-      .rectangle(sWidth - 200, 50, 100, 25, 0x00ddff)
+      .rectangle(sWidth - 70, sHeight / 2 - 20, 25, 100, 0x00ddff)
       .setDepth(3)
       .setScrollFactor(0);
     //
@@ -651,10 +720,11 @@ export default class Board extends Phaser.Scene {
     this.logs = [];
     for (let i = 0; i < 6; i++) {
       let log = this.add
-        .text(10, 120 + i * 30, "...", 0x00ddff)
+        .text(120 + i * 30, 10, "...", 0x00ddff)
         .setOrigin(0, 0.5)
         .setScrollFactor(0)
         .setDepth(3);
+      log.setAngle(90);
       this.logs.push(log);
     }
     this.player.reloadBar.setOrigin(0, 1);
@@ -687,7 +757,6 @@ export default class Board extends Phaser.Scene {
       this
     );
   }
-
   getMinDistance = (playerId, team) => {
     let d = 0;
     if (team !== this.team)
@@ -726,12 +795,12 @@ export default class Board extends Phaser.Scene {
 
     this.Enemies.forEach((enemy) => {
       if (enemy.playerId !== this.socket.id) {
-        enemy.hp.x = enemy.x;
-        enemy.hp.y = enemy.y - 40;
-        enemy.name.x = enemy.x;
-        enemy.name.y = enemy.y - 60;
+        enemy.hp.x = enemy.x + 40;
+        enemy.hp.y = enemy.y;
+        enemy.name.x = enemy.x + 60;
+        enemy.name.y = enemy.y;
         enemy.name.setOrigin(0.5, 0.5);
-        enemy.hp.width = enemy.config.hp;
+        enemy.hp.height = enemy.config.hp;
         enemy.hp.setOrigin(0.5, 0.5);
         let mapPos = this.getMiniMapPos(enemy.x, enemy.y);
         this.minimap.enemies[enemy.playerId].x = mapPos.x;
@@ -761,10 +830,10 @@ export default class Board extends Phaser.Scene {
       }
     });
     if (this.player) {
-      this.player.hp.x = this.player.x;
-      this.player.hp.y = this.player.y - 40;
-      this.player.name.x = this.player.x;
-      this.player.name.y = this.player.y - 60;
+      this.player.hp.x = this.player.x + 40;
+      this.player.hp.y = this.player.y;
+      this.player.name.x = this.player.x + 60;
+      this.player.name.y = this.player.y;
       this.player.name.setOrigin(0.5, 0.5);
       this.player.hp.setOrigin(0.5, 0.5);
 
@@ -806,11 +875,11 @@ export default class Board extends Phaser.Scene {
       }
 
       if (this.player.config !== undefined) {
-        this.player.reloadBar.width =
+        this.player.reloadBar.height =
           (this.player.config.reloading - this.reloadingTime) / 5;
-        this.player.hpBar.width = this.player.config.hp * 2;
-        this.player.hpBar.setOrigin(0, 0.5);
-        this.player.reloadBar.setOrigin(0, 0.5);
+        this.player.hpBar.height = this.player.config.hp * 2;
+        this.player.hpBar.setOrigin(0.5, 0);
+        this.player.reloadBar.setOrigin(0.5, 0);
       }
       if (this.reloadingTime > 0) this.reloadingTime -= 10;
       let movedFlag = false;
@@ -836,6 +905,27 @@ export default class Board extends Phaser.Scene {
           rotation = 0;
         }
         if (key === 3) {
+          this.player.setVelocityY(this.player.config.speed);
+          movedFlag = true;
+          rotation = -180;
+        }
+      } else {
+        if (this.joystickKey === 0) {
+          this.player.setVelocityX(-this.player.config.speed);
+          movedFlag = true;
+          rotation = -90;
+        }
+        if (this.joystickKey === 1) {
+          this.player.setVelocityX(this.player.config.speed);
+          movedFlag = true;
+          rotation = 90;
+        }
+        if (this.joystickKey === 2) {
+          this.player.setVelocityY(-this.player.config.speed);
+          movedFlag = true;
+          rotation = 0;
+        }
+        if (this.joystickKey === 3) {
           this.player.setVelocityY(this.player.config.speed);
           movedFlag = true;
           rotation = -180;
@@ -866,7 +956,7 @@ export default class Board extends Phaser.Scene {
       } else if (this.player.config !== undefined) {
         if (this.player.life > this.player.config.hp)
           this.player.config.hp += armour * this.level;
-        this.player.hp.width = this.player.config.hp;
+        this.player.hp.height = this.player.config.hp;
       }
 
       if (this.player.config !== undefined) {
@@ -908,7 +998,6 @@ export default class Board extends Phaser.Scene {
     this.setPositionOnMiniMap();
   }
   render() {}
-
   mine = () => {
     let mineItem = this.physics.add
       .sprite(this.player.x, this.player.y, "mine", 0)
@@ -984,7 +1073,6 @@ export default class Board extends Phaser.Scene {
     // this.physics.add.collider(bullet, this.bullets, this.hitBullet, null);
     // this.physics.add.collider(bullet, this.EnemyBullets, this.hitBullet, null);
   };
-
   onWorldBounds = (bullet, wall) => {
     bullet.gameObject.destroy();
     // console.log("true");
