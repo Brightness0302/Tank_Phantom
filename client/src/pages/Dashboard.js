@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { addTank, withDraw } from "../actions/user";
 import { Link } from "react-router-dom";
-import { deposit } from "../utils/wallet";
+import { deposit, transfer } from "../utils/wallet";
 import { toast } from "react-toastify";
 
 const Dashboard = ({ auth, addTank, withDraw, alerts }) => {
@@ -54,7 +54,7 @@ const Dashboard = ({ auth, addTank, withDraw, alerts }) => {
   }, [auth]);
 
   const buyTank = async () => {
-    await deposit(tankBuy);
+    await transfer(tankBuy);
     await addTank(tankBuy);
   };
 

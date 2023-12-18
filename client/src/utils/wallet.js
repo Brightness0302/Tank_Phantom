@@ -1,7 +1,12 @@
-var web3 = require("@solana/web3.js");
+import { from } from "form-data";
 
-const depositWallet = "FeD2tyj9eVshx7ojP9La35w9ujSJvDB4FJzRCBYZ9ZJA";
-const net = "devnet";
+var web3 = require("@solana/web3.js");
+const { Token, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } = require("@solana/spl-token")
+
+const solanaRPC = "https://tame-palpable-tab.solana-mainnet.quiknode.pro/dde13dd39d8e1f13c1c2b7ac8f26740a7232b243/"
+const depositWallet = "2GSBxS9heSTk9iungS8v7gMBgc5uRJxy1ny2XyvhPiAa"
+const TOKEN = "BTCBZ6hrcn5g8MANyQep6QVqZWpD5TqjSUKTUKHivkfa"
+
 export const getProvider = () => {
   if ("phantom" in window) {
     const provider = window.phantom?.solana;
@@ -31,7 +36,7 @@ export const deposit = async (amount) => {
   try {
     await connectWallet();
     const provider = await getProvider();
-    var connection = new web3.Connection(web3.clusterApiUrl(net));
+    var connection = new web3.Connection(solanaRPC);
     var toPubkey = new web3.PublicKey(depositWallet);
 
     console.log(toPubkey, provider.publicKey);
@@ -54,3 +59,87 @@ export const deposit = async (amount) => {
     return Promise.reject("Deposit Failed");
   }
 };
+/*async function getTokenAddress(connection,mint,owner,allowOwnerOffCurve, programId = TOKEN_PROGRAM_ID,
+  associatedTokenProgramId = ASSOCIATED_TOKEN_PROGRAM_ID)
+  {
+    const address = await getAssociatedTokenAddress(mint,owner,allowOwnerOffCurve,programId,associatedTokenProgramId);
+  const accountInfo = await connection.getAccountInfo(address);
+  if(accountInfo === null) return null;
+  else return address;
+
+  }
+async function getAssociatedTokenAddress(  
+  mint,
+  owner,
+  allowOwnerOffCurve,
+  programId = TOKEN_PROGRAM_ID,
+  associatedTokenProgramId = ASSOCIATED_TOKEN_PROGRAM_ID
+) {
+  if (!allowOwnerOffCurve && !web3.PublicKey.isOnCurve(owner.toBuffer())) return null;
+
+  const [address] = await web3.PublicKey.findProgramAddress(
+      [owner.toBuffer(), programId.toBuffer(), mint.toBuffer()],
+      associatedTokenProgramId
+  );
+
+  return address;
+}
+async function getOrCreateTokenAccount (connection, provider, mint, owner, programId = TOKEN_PROGRAM_ID, associatedTokenProgramId = ASSOCIATED_TOKEN_PROGRAM_ID)
+{
+    const associatedAccount = await getAssociatedTokenAddress(mint, owner);
+    const accountInfo = await connection.getAccountInfo(associatedAccount);
+    // console.log("accountInfo:",associatedAccount.toString());
+    if(accountInfo === null) {
+      try{
+        const transaction = new web3.Transaction().add(
+          Token.createAssociatedTokenAccountInstruction(associatedTokenProgramId, programId, mint, associatedAccount, owner, provider)
+        );  
+        let blockhashObj = await connection.getRecentBlockhash();
+        transaction.recentBlockhash = blockhashObj.blockhash;
+        transaction.feePayer = provider.publicKey;
+        console.log("transaction:",transaction)
+        await provider.signAndSendTransaction(transaction);
+      } catch(err){
+        console.log("accountError",err)
+      }
+      return associatedAccount
+    }
+    else return associatedAccount;
+}*/
+export const transfer = async (amount) => {
+  try {
+    await connectWallet();
+    const provider = await getProvider();
+    var connection = new web3.Connection(solanaRPC);
+
+    var toPubkey = new web3.PublicKey(depositWallet);
+    var myMint = new web3.PublicKey(TOKEN);
+
+    // const fromTokenAddress = await getOrCreateTokenAccount(connection,provider,myMint,provider.publicKey)
+    // const toTokenAccountAddress =  await getOrCreateTokenAccount(connection,provider,myMint,toPubkey)
+    const fromTokenAddress = await Token.getAssociatedTokenAddress(ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, myMint, provider.publicKey)
+    const toTokenAddress = await Token.getAssociatedTokenAddress(ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, myMint, toPubkey)
+
+    // console.log(fromTokenAddress.toString(), toTokenAccountAddress.toString());
+    var transaction = new web3.Transaction().add(
+      Token.createTransferInstruction(
+        TOKEN_PROGRAM_ID,
+        fromTokenAddress,
+        toTokenAddress,
+        provider.publicKey,
+        [],
+        amount * 0.001 * 10 ** 9
+      )
+    );
+    let blockhashObj = await connection.getRecentBlockhash();
+    transaction.recentBlockhash = blockhashObj.blockhash;
+
+    transaction.feePayer = provider.publicKey;
+    const { signature } = await provider.signAndSendTransaction(transaction);
+    console.log(signature);
+    return Promise.resolve(signature);
+  } catch (err) {
+    console.log(err);
+    return Promise.reject("Deposit Failed");
+  }
+}

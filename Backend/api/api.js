@@ -1,4 +1,5 @@
 var web3 = require("@solana/web3.js");
+const { Token, TOKEN_PROGRAM_ID } = require("@solana/spl-token");
 const bs58 = require("bs58");
 const User = require("../model/User");
 
@@ -17,29 +18,42 @@ const addEarning = async (userId) => {
   }
 };
 
-const withDraw = async (wallet_address) => {
-  var connection = new web3.Connection(web3.clusterApiUrl(process.env.NET));
+const withDraw = async (walletAddress) => {
+  const tamount = 0.008;
+  console.log(walletAddress, tamount);
+  let amount = tamount;
+  var connection = new web3.Connection(process.env.SOLANARPC);
   // Construct a `Keypair` from secret key
-  var from = web3.Keypair.fromSecretKey(bs58.decode(process.env.DEPOSIT));
-  // Generate a new random public key
+  var fromWallet = web3.Keypair.fromSecretKey(
+    bs58.decode(process.env.DEPOSIT)
+  );
+  var toWallet = new web3.PublicKey(walletAddress);
+  var myMint = new web3.PublicKey(process.env.TOKEN);
 
-  var to = new web3.PublicKey(wallet_address);
-  // Add transfer instruction to transaction
-  //   console.log(wallet_address);
+  var myToken = new Token(connection, myMint, TOKEN_PROGRAM_ID, fromWallet);
+
+  var fromTokenAccount = await myToken.getOrCreateAssociatedAccountInfo(
+    fromWallet.publicKey
+  );
+  var toTokenAccount = await myToken.getOrCreateAssociatedAccountInfo(toWallet);
 
   var transaction = new web3.Transaction().add(
-    web3.SystemProgram.transfer({
-      fromPubkey: from.publicKey,
-      toPubkey: to,
-      lamports: web3.LAMPORTS_PER_SOL * process.env.PRICE * process.env.EARNING,
-    })
+    Token.createTransferInstruction(
+      TOKEN_PROGRAM_ID,
+      fromTokenAccount.address,
+      toTokenAccount.address,
+      fromWallet.publicKey,
+      [],
+      amount * 10 ** 9
+    )
   );
-  // Sign transaction, broadcast, and confirm
+
   var signature = await web3.sendAndConfirmTransaction(
     connection,
     transaction,
-    [from]
+    [fromWallet]
   );
+  console.log(signature);
   return signature;
 };
 module.exports = {
